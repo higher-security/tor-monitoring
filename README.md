@@ -1,15 +1,22 @@
-# Introduction
+# Overview
 
-Set of simple tools using stem python to monitor and control tor
+Set of simple tools using stem python to monitor and control tor:
+
+* `tor-map`: open a Google maps of the whole circuit and each nodes with the default system browser
+
+![alt text](./dev/circuit-map-example.png "Example of generated map")
+
+
+* `tor-circuit`: display detailed information about the circuit nodes (ip, nickname, reverse DNS, geoip, fingerprint, whois output, nmap output)
 
 # Installation
 
-    # dpkg -i tor-monitoring-1.0.deb
+1. Package installation
 
-# Synopsis
+		# pip install pywhois stem python-nmap
+		# dpkg -i tor-control-tk_0.1.deb
 
-* `tor-circuit`: display detailed information about the circuit nodes (reverse dns,fingerprint,geolocalisation,whois output,etc.)  
-* `tor-map [-q] [-o <destination] [-z <zoom>]`: open a Google map of the circuit and of each node neighboring
-* `tor-new`: force to create a new tor circuit
-* `tor-exit <2 digit country codes>` and `tor-entry <2 digit coutry codes>`: set the exit and entry nodes country and restart tor.
+2. Open a tor control port
 
+		# echo 'ControlPort 9051' >> /etc/tor/torrc
+		# service tor restart

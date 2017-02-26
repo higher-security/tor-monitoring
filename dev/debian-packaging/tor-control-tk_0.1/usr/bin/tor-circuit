@@ -1,0 +1,86 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# -*- coding: cp850 -*
+from stem import CircStatus
+from stem.control import Controller
+import nmap
+import geoip2.database
+import socket
+import whois
+from ipwhois import IPWhois
+
+# CHECK IF THERE IS A PORT 9051 is opened
+
+import socket
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+result = sock.connect_ex(('127.0.0.1',9051))
+if result != 0:
+    print """
+You need a control port for this script to work. Please add the line
+
+	ControlPort 9051
+
+to your torrc and restart tor/tor-browser before launching this script. torrc may be located at
+    
+	* tor-browser_en-US/Browser/TorBrowser/Data/Tor/torrc (for Tor browser)
+	* /etc/tor/torrc (for OS tor)
+"""
+
+    sys.exit()
+
+
+reader = geoip2.database.Reader('/usr/lib/geoip/GeoLite2-City.mmdb')
+
+with Controller.from_port(port = 9051) as controller:
+    controller.authenticate()
+    for circ in sorted(controller.get_circuits()):
+        if circ.status != CircStatus.BUILT:
+            continue
+
+    node_num=1
+    for i, entry in enumerate(circ.path):
+        div = '+' if (i == len(circ.path) - 1) else '|'
+        fingerprint, nickname = entry
+        desc = controller.get_network_status(fingerprint, None)
+        address = desc.address if desc else 'unknown'
+        response=reader.city(address)
+        try:
+            socket.gethostbyaddr(address)
+        except socket.herror:
+            host='?'
+        else:
+            host=socket.gethostbyaddr(address)[0]
+
+        #    org = whois.whois(host)['org']
+        num_it=23
+        column1 = ["IP","NICKNAME","REVERSE DNS","GEOLOCALIZATION","FINGERPRINT"]
+        column2 = [address,nickname,host,str(response.country.name)+' ('+str(response.location.latitude)+', '+ str(response.location.longitude)+')',fingerprint]
+        print '\n--------- Node '+str(node_num)+' ------------\n'
+        for c1, c2 in zip(column1, column2):
+            print "%-22s %s" % (c1, c2)
+        print "WHOIS OUTPUT"
+        # Organization name with whois query
+        for key in ['range','description','postal_code','city','address','state','asn_country_code' ]:
+            try:
+                field=str(IPWhois(address).lookup_whois()['nets'][0][key])
+            except:
+                continue
+            else:
+                if field != 'None':
+                    print " "*num_it+str(field).replace('\n','\n'+' '*num_it).replace(' - ','-')
+        node_num=node_num+1
+	print "OS (NMAP)"
+
+	nm = nmap.PortScanner()
+	nm.scan(address, arguments='-F -O')
+	host=nm.all_hosts()[0]
+
+	for i in range(len(nm[host]['osmatch'])):
+		print ' '*num_it+nm[host]['osmatch'][i]['accuracy']+'% '+nm[host]['osmatch'][i]['name']
+	print "TCP PORTS (NMAP)"
+	proto='tcp'
+	lport = nm[host][proto].keys()
+	lport.sort()
+	for port in lport:
+		row=[port,nm[host][proto][port]['name'],nm[host][proto][port]['state']]
+		print("{: >26} {: >20} {: >20}".format(*row))

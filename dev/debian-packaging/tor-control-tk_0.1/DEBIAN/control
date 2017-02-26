@@ -1,0 +1,9 @@
+Package: tor-control-tk
+Version: 0.1
+Section: base
+Priority: optional
+Architecture: all
+Maintainer: Yann Pittet <yann.pittet@tutanota.com>
+Description: 
+ Set of simple tools to control and monitor tor including maps, automatic nmap of nodes, etc.
+Homepage: https://github.com/higher-security/tor-control-tk
